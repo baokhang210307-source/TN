@@ -74,6 +74,7 @@ class DriveManager:
 
     def upload_json(self, name, data, parent_id, file_id=None):
         if name.endswith('.json'): name = name[:-5]
+        
         meta = {'name': f"{name}.json"}
         media = MediaIoBaseUpload(io.BytesIO(json.dumps(data, ensure_ascii=False).encode('utf-8')), mimetype='application/json')
         if file_id:
@@ -127,12 +128,16 @@ class NotionButton(QPushButton):
 class OptionButton(QPushButton):
     def __init__(self):
         super().__init__()
-        self.setCheckable(True); self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding); self.setFlat(True) 
-        self.current_state = "normal"; self.update_ui()
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        self.setFlat(True) 
+        self.current_state = "normal"
+        self.update_ui()
 
     def set_state(self, state):
-        self.current_state = state; self.update_ui()
+        self.current_state = state
+        self.update_ui()
 
     def update_ui(self):
         base = "border-style: solid; border-radius: 6px; font-size: 16px; text-align: left; padding: 15px; outline: none; "
@@ -458,7 +463,6 @@ class TN_Master(QMainWindow):
         self.btn_del_f.hide()
         self.clear_layout(self.exam_lyt)
         self.switch_view(0)
-        # Fix Crash: Nghỉ 100ms để luồng cũ kịp dọn dẹp trước khi khởi tạo luồng mới
         QTimer.singleShot(100, self.load_folders_bg)
 
     def refresh_exams_bg(self):
@@ -469,6 +473,7 @@ class TN_Master(QMainWindow):
 
     def on_exams_loaded(self, exams):
         self.clear_layout(self.exam_lyt)
+            
         for ex in exams:
             display_name = ex['name']
             if display_name.endswith('.json'): display_name = display_name[:-5]
@@ -634,7 +639,7 @@ class TN_Master(QMainWindow):
         if self.quiz_index < len(self.quiz_data):
             self.load_question()
         else:
-            self.submit_exam() 
+            self.do_submit_exam() 
 
     def toggle_flag(self):
         if self.quiz_index in self.flagged_qs: self.flagged_qs.remove(self.quiz_index)
@@ -712,7 +717,7 @@ class TN_Master(QMainWindow):
                 item_lyt.addWidget(lbl_user); item_lyt.addWidget(lbl_correct)
                 self.wrong_lyt.addWidget(item_box)
 
-        # Xử lý điểm thông minh (Bỏ .0 nếu là số nguyên)
+        # Xử lý điểm thông minh
         score_10 = (correct_count / len(self.quiz_data)) * 10
         if score_10.is_integer(): score_str = f"{int(score_10)}"
         else: score_str = f"{round(score_10, 2)}"
