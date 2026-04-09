@@ -291,7 +291,9 @@ class TN_Master(QMainWindow):
         for btn in self.opts: q_lyt.addWidget(btn)
         q_lyt.addLayout(self.q_footer)
 
-        self.nav_area = QFrame(); self.nav_area.setFixedWidth(280)
+        # --- BẢNG TIẾN ĐỘ ---
+        # Đã mở rộng chiều rộng từ 280 -> 320px để hiển thị thoải mái 5 cột vuông vắn
+        self.nav_area = QFrame(); self.nav_area.setFixedWidth(320) 
         self.nav_area.setStyleSheet(f"background-color: {N_SIDEBAR}; border-radius: 8px; border: 1px solid {N_BORDER}; margin-left: 20px;")
         nav_lyt = QVBoxLayout(self.nav_area)
         lbl_nav = QLabel("Tiến độ làm bài"); lbl_nav.setStyleSheet(f"color: {N_MUTED}; font-weight: bold; border: none; margin-bottom: 10px;")
@@ -299,8 +301,21 @@ class TN_Master(QMainWindow):
         
         scroll_nav = QScrollArea()
         scroll_nav.setWidgetResizable(True); scroll_nav.setStyleSheet("border: none; background: transparent;")
+        
         self.nav_container = QWidget()
-        self.nav_grid = QGridLayout(self.nav_container)
+        self.nav_wrap_vbox = QVBoxLayout(self.nav_container)
+        self.nav_wrap_vbox.setContentsMargins(0, 0, 0, 0)
+        self.nav_wrap_vbox.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        
+        self.nav_grid_widget = QWidget()
+        self.nav_grid_widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        
+        self.nav_grid = QGridLayout(self.nav_grid_widget)
+        self.nav_grid.setSpacing(10)
+        self.nav_grid.setContentsMargins(0, 0, 0, 0)
+        
+        self.nav_wrap_vbox.addWidget(self.nav_grid_widget)
+        
         scroll_nav.setWidget(self.nav_container)
         nav_lyt.addWidget(scroll_nav)
         
@@ -406,7 +421,6 @@ class TN_Master(QMainWindow):
         self.show_confirm("Lỗi kết nối", str(err), "Đã hiểu", lambda: self.switch_view(self.view_before_confirm))
         self.btn_conf_no.hide()
 
-    # --- HÀM XÓA BỘ NHỚ AN TOÀN TRÁNH VĂNG APP ---
     def clear_layout(self, layout):
         if layout is not None:
             while layout.count():
@@ -559,11 +573,18 @@ class TN_Master(QMainWindow):
         else:
             self.nav_area.show(); self.btn_flag.show()
             self.btn_prev.show(); self.btn_next.show(); self.btn_submit_exam.show()
+            
             self.clear_layout(self.nav_grid)
             self.nav_btns = []
+            
+            # --- TẠO CÁC Ô SỐ HÌNH VUÔNG ---
             for i in range(len(self.quiz_data)):
-                btn = QPushButton(str(i + 1)); btn.setFixedSize(40, 40); btn.setCursor(Qt.CursorShape.PointingHandCursor)
+                btn = QPushButton(str(i + 1))
+                btn.setFixedSize(40, 40)
+                btn.setFlat(True) 
+                btn.setCursor(Qt.CursorShape.PointingHandCursor)
                 btn.clicked.connect(lambda ch, idx=i: self.jump_to_q(idx))
+                
                 self.nav_grid.addWidget(btn, i // 5, i % 5)
                 self.nav_btns.append(btn)
                 
@@ -654,12 +675,12 @@ class TN_Master(QMainWindow):
 
     def update_nav_ui(self):
         for i, btn in enumerate(self.nav_btns):
-            style = "border-radius: 4px; font-weight: bold; outline: none; border-style: solid; "
-            border = f"2px solid #E65100;" if i in self.flagged_qs else f"1px solid {N_BORDER};"
-            if i in self.user_answers: bg, color = "#EBEBEA", N_TEXT
-            else: bg, color = N_BG, N_MUTED
-            if i == self.quiz_index: border = f"2px solid {N_PRIMARY};"
-            btn.setStyleSheet(f"QPushButton {{ background-color: {bg}; border: {border}; color: {color}; {style} }}")
+            bg = "#EBEBEA" if i in self.user_answers else N_BG
+            color = N_TEXT 
+            border = f"2px solid #E65100;" if i in self.flagged_qs else (f"2px solid {N_PRIMARY};" if i == self.quiz_index else f"1px solid {N_BORDER};")
+            
+            style = "min-width: 40px; max-width: 40px; min-height: 40px; max-height: 40px; border-radius: 4px; font-weight: bold; font-size: 14px; outline: none; border-style: solid; margin: 0px; padding: 0px;"
+            btn.setStyleSheet(f"QPushButton {{ background-color: {bg}; border: {border}; color: {color}; {style} }} QPushButton:hover {{ background-color: {N_HOVER}; }}")
 
     # --- RESULTS SCREEN ---
     def submit_exam_confirm(self):
@@ -717,7 +738,7 @@ class TN_Master(QMainWindow):
                 item_lyt.addWidget(lbl_user); item_lyt.addWidget(lbl_correct)
                 self.wrong_lyt.addWidget(item_box)
 
-        # Xử lý điểm thông minh
+        # Xử lý điểm thông minh (Bỏ .0 nếu là số nguyên)
         score_10 = (correct_count / len(self.quiz_data)) * 10
         if score_10.is_integer(): score_str = f"{int(score_10)}"
         else: score_str = f"{round(score_10, 2)}"
